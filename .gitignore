@@ -1,0 +1,14 @@
+.DS_Store
+.env
+.venv/
+__pycache__/
+*.pyc
+*.jpeg
+*.jpg
+*.png
+*.webp
+
+!static/sample-document.png
+native/akshaya-ocr
+native/cache/
+native/python/
