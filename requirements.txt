@@ -1,6 +1,5 @@
 fastapi>=0.128.8,<0.129
 uvicorn>=0.39,<0.40
-google-genai>=1.47,<2
 pydantic>=2.13,<3
 Pillow>=11.3,<12
 httpx>=0.28,<0.29

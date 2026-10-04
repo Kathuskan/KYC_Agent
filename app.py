@@ -5,7 +5,10 @@ from fastapi.responses import FileResponse, JSONResponse
 from starlette.concurrency import run_in_threadpool
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from kyc_agent import MAX_BYTES, validate_image
-from offline import extract_offline, BINARY
+from offline import extract_offline, engine_status, EngineUnavailable
+import threading
+
+OCR_SLOT = threading.BoundedSemaphore(1)
 
 ROOT = Path(__file__).parent
 app = FastAPI(title='Agent Akshaya', docs_url=None, redoc_url=None)
@@ -32,7 +35,7 @@ def asset(name: str):
 
 @app.get('/api/status')
 def status():
-    return {'configured': BINARY.is_file(), 'engine': 'offline'}
+    return engine_status()
 
 @app.post('/api/extract')
 async def extract(request: Request):
@@ -49,10 +52,14 @@ async def extract(request: Request):
         validate_image(bytes(data))
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from None
-    if not BINARY.is_file():
-        raise HTTPException(503, 'Offline OCR is not built. Follow the native build step in README.md.')
+    if not OCR_SLOT.acquire(blocking=False):
+        raise HTTPException(429, 'An extraction is already running. Try again shortly.')
     try:
         result = await run_in_threadpool(extract_offline, bytes(data))
         return result
+    except EngineUnavailable:
+        return JSONResponse({'detail': 'Install Tesseract and configured language data. See README.md.'}, status_code=503)
     except Exception:
-        return JSONResponse({'detail': 'The local OCR engine could not process this image. The sample test also fails in this environment; extraction is not yet operational.'}, status_code=502)
+        return JSONResponse({'detail': 'Text extraction failed or timed out. Try a clearer image.'}, status_code=502)
+    finally:
+        OCR_SLOT.release()

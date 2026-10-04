@@ -12,3 +12,15 @@ __pycache__/
 native/akshaya-ocr
 native/cache/
 native/python/
+
+# Private identity evidence and local exports
+*.pdf
+*.heic
+*.tiff
+*.tif
+*.bmp
+*.json
+*.jsonl
+uploads/
+evidence/
+exports/
